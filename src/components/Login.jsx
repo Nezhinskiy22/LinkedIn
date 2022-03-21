@@ -1,5 +1,5 @@
 import { connect } from "react-redux";
-import { Redirect } from "react-router-dom";
+import { Redirect } from "react-router";
 import styled from "styled-components";
 import { signInAPI } from "../actions";
 

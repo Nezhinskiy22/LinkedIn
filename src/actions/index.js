@@ -40,3 +40,19 @@ export function signOutAPI() {
       });
   };
 }
+
+export function postArticleAPI(payload) {
+  return (dispatch) => {
+    if (payload.image != "") {
+      const upload = storage
+        .ref(`images/${payload.image.name}`)
+        .put(payload.image);
+      upload.on("state_changed", (snapshot) => {
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+
+        console.log(`Progress: $(progress)%`);
+      });
+    }
+  };
+}

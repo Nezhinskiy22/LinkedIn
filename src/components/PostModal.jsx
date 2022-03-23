@@ -1,46 +1,121 @@
 import styled from "styled-components";
 import React, { useState } from "react";
+import ReactPlayer from "react-player";
+import { connect } from "react-redux";
 
-const Postmodal = () => {
+const Postmodal = (props) => {
   const [editorText, setEditorText] = useState("");
+  const [shareImage, setShareImage] = useState("");
+  const [videoLink, setvideoLink] = useState("");
+  const [assetArea, setAssetArea] = useState("");
+
+  const handleChange = (e) => {
+    const image = e.target.files[0];
+    if (image === "" || image === undefined) {
+      alert(`not an image, the file is a ${typeof image}`);
+      return;
+    }
+    setShareImage(image);
+  };
+
+  const reset = (event) => {
+    setEditorText("");
+    props.handleClick(event);
+    setShareImage("");
+    setvideoLink("");
+    setAssetArea("");
+  };
+
+  const switchAssetArea = (area) => {
+    setShareImage("");
+    setvideoLink("");
+    setAssetArea(area);
+  };
+
   return (
-    <Container>
-      <Content>
-        <Header>
-          <h2>Create a post</h2>
-          <button>
-            <img src="/images/close-icon.svg" alt="" />
-          </button>
-        </Header>
-        <SharedContent>
-          <UserInfo>
-            <img src="/images/user.svg" alt="" />
-            <span>Name</span>
-          </UserInfo>
-          <textarea
-            value={editorText}
-            onChange={(event) => setEditorText(event.target.value)}
-          ></textarea>
-        </SharedContent>
-        <ShareCreation>
-          <AttachAssets>
-            <AssetButton>
-              <img src="/images/share-image.svg" alt="" />
-            </AssetButton>
-            <AssetButton>
-              <img src="/images/share-video.svg" alt="" />
-            </AssetButton>
-          </AttachAssets>
-          <ShareComment>
-            <AssetButton>
-              <img src="/images/share-comment.svg" alt="" />
-              Anyone
-            </AssetButton>
-          </ShareComment>
-          <PostButton>Post</PostButton>
-        </ShareCreation>
-      </Content>
-    </Container>
+    <>
+      {props.showModal === "open" && (
+        <Container>
+          <Content>
+            <Header>
+              <h2>Create a post</h2>
+              <button onClick={(event) => reset(event)}>
+                <img src="/images/close-icon.svg" alt="" />
+              </button>
+            </Header>
+            <SharedContent>
+              <UserInfo>
+                {props.user.photoURL ? (
+                  <img src={props.user.photoURL} />
+                ) : (
+                  <img src="/images/user.svg" alt="" />
+                )}
+                <span>{props.user.displayName}</span>
+              </UserInfo>
+              <Editor>
+                <textarea
+                  value={editorText}
+                  onChange={(event) => setEditorText(event.target.value)}
+                  placeholder="What do you want to talk about?"
+                  autoFocus={true}
+                />
+                {assetArea === "image" ? (
+                  <UploadImage>
+                    <input
+                      type="file"
+                      accept="/image/gif, image/jpeg, image/png"
+                      name="image"
+                      id="file"
+                      style={{ display: "none" }}
+                      onChange={handleChange}
+                    />
+                    <p>
+                      <label htmlFor="file">Select an image to share</label>
+                      {shareImage && (
+                        <img src={URL.createObjectURL(shareImage)} />
+                      )}
+                    </p>
+                  </UploadImage>
+                ) : (
+                  assetArea === "media" && (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Pllease input a video link..."
+                        value={videoLink}
+                        onChange={(e) => setvideoLink(e.target.value)}
+                      />
+                      {videoLink && (
+                        <ReactPlayer width={"100%"} url={videoLink} />
+                      )}
+                    </>
+                  )
+                )}
+              </Editor>
+            </SharedContent>
+            <ShareCreation>
+              <AttachAssets>
+                <AssetButton onClick={() => switchAssetArea("image")}>
+                  <img src="/images/share-image.svg" alt="" />
+                </AssetButton>
+                <AssetButton onClick={() => switchAssetArea("media")}>
+                  <img src="/images/share-video.svg" alt="" />
+                </AssetButton>
+              </AttachAssets>
+              <ShareComment>
+                <AssetButton>
+                  <img src="/images/share-comment.svg" alt="" />
+                  Anyone
+                </AssetButton>
+              </ShareComment>
+              <PostButton disabled={!editorText ? true : false}>
+                Post
+              </PostButton>
+            </ShareCreation>
+          </Content>
+        </Container>
+      )}
+    </>
   );
 };
 
@@ -53,6 +128,7 @@ export const Container = styled.div`
   z-index: 9999;
   color: black;
   background-color: rgba(0, 0, 0, 0.8);
+  animation: fadeIn 0.3s;
 `;
 
 const Content = styled.div`
@@ -84,7 +160,8 @@ const Header = styled.div`
     width: 40px;
     max-width: auto;
     color: rgba(0, 0, 0, 0.15);
-    svg {
+    svg,
+    img {
       pointer-events: none;
     }
   }
@@ -159,11 +236,42 @@ const PostButton = styled.button`
   border-radius: 20px;
   padding-left: 16px;
   padding-right: 16px;
-  background: #0a66c2;
-  color: white;
+  background: ${(props) => (props.disabled ? "rgba(0,0,0, 0.8)" : "#0a66c2")};
+  color: ${(props) => (props.disabled ? "rgba(1,1,1, 0.2)" : "white")};
   &:hover {
-    background: #004182;
+    background: ${(props) =>
+      props.disabled ? "rgba(0,0,0, 0.08)" : "#004182"};
   }
 `;
 
-export default Postmodal;
+const Editor = styled.div`
+  padding: 12px 24px;
+  textarea {
+    width: 100%;
+    min-height: 100px;
+    resize: none;
+  }
+  input {
+    width: 100%;
+    height: 35px;
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+`;
+
+const UploadImage = styled.div`
+  text-align: center;
+  img {
+    width: 100%;
+  }
+`;
+
+const mapStateToProps = (state) => {
+  return {
+    user: state.userState.user,
+  };
+};
+
+const mapDispatchToProps = (dispatch) => {};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Postmodal);

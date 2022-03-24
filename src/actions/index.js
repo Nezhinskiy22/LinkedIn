@@ -1,4 +1,4 @@
-import { auth, provider } from "../firebase";
+import db, { auth, provider, storage } from "../firebase";
 import { SET_USER } from "./actionType";
 
 export const setUser = (payload) => ({
@@ -47,11 +47,46 @@ export function postArticleAPI(payload) {
       const upload = storage
         .ref(`images/${payload.image.name}`)
         .put(payload.image);
-      upload.on("state_changed", (snapshot) => {
-        const progress =
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      upload.on(
+        "state_changed",
+        (snapshot) => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
 
-        console.log(`Progress: $(progress)%`);
+          console.log(`Progress: ${progress}%`);
+          if (snapshot.state === "RUNNING") {
+            console.log(`Progress: ${progress}%`);
+          }
+        },
+        (error) => console.log(error.code),
+        async () => {
+          const downloadURL = await upload.snapshot.ref.getDownloadURL();
+          db.collection("articles").add({
+            actor: {
+              description: payload.user.email,
+              title: payload.user.displayName,
+              date: payload.timestamp,
+              image: payload.user.photoURL,
+            },
+            video: payload.video,
+            sharedImg: downloadURL,
+            comments: 0,
+            description: payload.description,
+          });
+        }
+      );
+    } else if (payload.video) {
+      db.collection("articles").add({
+        actor: {
+          description: payload.user.email,
+          title: payload.user.displayName,
+          date: payload.timestamp,
+          image: payload.user.photoURL,
+        },
+        video: payload.video,
+        sharedImg: "",
+        comments: 0,
+        description: payload.description,
       });
     }
   };
